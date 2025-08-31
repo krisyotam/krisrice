@@ -9,7 +9,7 @@ life, [blog](https://krisyotam.com/blog), keep long form [notes](https://krisyot
 [LessWrong](https://www.lesswrong.com/users/krisyotam), [Effective Altruism Forum](https://forum.effectivealtruism.org/users/krisyotam), and 
 the [AI Alignment Forum](https://www.alignmentforum.org/users/krisyotam). I also write [verse](https://krisyotam.com/verse), and practice via the [progymnasmata](https://krisyotam.com/progymnasmata).
   
-Omar Khayyam also came to the Vizier...but not to ask for title or office. 'The greatest boon you can confer on me,' he said, 'is to let me live in a corner under the shadow of your fortune, to spread wide the advantages of Science, 
+> Omar Khayyam also came to the Vizier...but not to ask for title or office. 'The greatest boon you can confer on me,' he said, 'is to let me live in a corner under the shadow of your fortune, to spread wide the advantages of Science, 
 > and pray for your long life and prosperity.'  
   
 My work is only possible through [public](), and [private]() donations. I Appreciate every one supporting my work.   
