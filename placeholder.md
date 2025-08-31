@@ -45,7 +45,9 @@ I maintain a list of some forks of simple software I regularly use. These are th
 - [dmenu]()  
 - [st]()  
 - [surf]()  
-- [sic]()  
+- [sic]()
+- [cgit]()
+- [sfeed]()
   
 For monthly updates, you can [subscribe to my newsletter](https://krisyotam.substack.com/) or [read newsletter archives](https://krisyotam.substack.com/archive).  
   
