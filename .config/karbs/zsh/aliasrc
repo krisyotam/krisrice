@@ -1,0 +1,43 @@
+# ────────────────────────────────────────
+# .zsh aliases
+# Author: Kris Yotam <krisyotam@gmail.com>
+# Date: 2025-09-08
+# License: GNU GPLv3
+# ────────────────────────────────────────
+
+# System Commands
+alias logout='pkill -KILL -u krisyotam'
+alias lock='slock'
+alias shutdown='sudo shutdown now'       
+alias restart='sudo systemctl reboot'      
+
+
+# Manage Audio Devices (blueman-manager)
+
+    # Input (pactl list sources short)
+
+
+    # Output (pactl list sinks short)
+    alias hs65='pactl set-default-sink alsa_output.usb-Corsair_Corsair_HS65_SURROUND-00.analog-stereo'
+    alias airpods='pactl set-default-sink bluez_output.20_15_82_D9_F9_CC.1'
+
+
+# Central Applications
+alias irc='sic -h irc.libera.chat -n krisyotam'
+alias browser='surf google.com &'
+alias rss='sfeed_curses ~/.sfeed/feeds'
+
+# Extension Applications
+alias hn='hakuneko-desktop &'
+
+# Edit Configuration Files
+alias zshrc='nano ~/.zshrc'
+alias snippets='nano ~/.local/share/larbs/snippets'
+
+
+
+
+alias torrent='qbittorrent &'
+alias discord='flatpak run com.discordapp.Discord &'
+alias steam="flatpak run com.valvesoftware.Steam"
+alias vscode='flatpak run com.visualstudio.code &'

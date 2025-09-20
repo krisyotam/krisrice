@@ -1,0 +1,24 @@
+sfeedpath="$HOME/.sfeed/feeds"
+
+fetch() {
+    curl -L --max-redirs 2 -H "User-Agent: sfeed" -f -s -m 15 \
+        "$2" 2>/dev/null
+}
+
+# list of feeds to fetch:
+feeds() {
+    # get youtube Atom feed: curl -s -L 'https://.../videos' | sfeed_web URL | cut -f 1
+    feed "terrytao"    "https://terrytao.wordpress.com/feed/"
+    feed "jre"        "http://podcasts.joerogan.net/feed"
+    feed "xkcd"       "https://xkcd.com/atom.xml"
+    feed "lukesmith"  "https://www.youtube.com/feeds/videos.xml?channel_id=UC2eYFnH61tmytImy1mTYvhA"
+    feed "distrotube" "https://www.youtube.com/feeds/videos.xml?channel_id=UCVls1GmFKf6WlTraIb_IaJg"
+    feed "thinkr"     "https://www.youtube.com/feeds/videos.xml?channel_id=UCf8D.."
+    feed "rossman"    "https://www.youtube.com/feeds/videos.xml?channel_id=UCmMk..."
+    feed "computerphile" "https://www.youtube.com/feeds/videos.xml?channel_id=UC9-y-6csu5WGm29I7JiwpnA"
+    feed "engineer"   "https://www.youtube.com/feeds/videos.xml?channel_id=UCtGSN0sVvjCuiC0m0C0blaA"
+    feed "forestforest" "https://www.youtube.com/feeds/videos.xml?channel_id=UCx85JJkJkJq6y5o-9YKxg"
+    feed "kunt"       "https://lob.podbean.com/feed.xml"
+    feed "intercept"  "https://theintercept.com/feed/?lang=en"
+}
+

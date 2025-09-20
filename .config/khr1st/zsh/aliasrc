@@ -1,0 +1,32 @@
+# ────────────────────────────────────────
+# .zsh aliases
+# Author: Kris Yotam <krisyotam@gmail.com>
+# Date: 2025-09-08
+# Configuration for khr1st pentesting setup
+# License: GNU GPLv3
+# ────────────────────────────────────────
+
+# System Commands
+alias logout='pkill -KILL -u krisyotam'
+
+# Manage Audio Devices (blueman-manager)
+
+    # Input (pactl list sources short)
+
+
+    # Output (pactl list sinks short)
+
+
+# Networking
+
+
+# Wireless
+
+
+# OSINT
+
+
+# Payloads
+
+
+# Hash Cracking
