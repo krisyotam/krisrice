@@ -114,8 +114,3 @@ user_pref("security.sandbox.content.level", 5);
 /** 🧃 Extra Juice: Make Firefox *say no* to ping tracking **/
 user_pref("browser.send_pings", false);
 user_pref("browser.send_pings.require_same_host", true);
-
-/**************************************
- * End of GOD-TIER user.js            *
- * You are now operating in ghostmode *
- **************************************/
