@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Author: Kris Yotam
+# Date: 2025-09-28
+# Purpose: Custom browser dispatcher. Routes URLs to the correct browser:
+#          - Blog platforms (Blogspot, Medium, WordPress, Ghost) → surf
+#          - .onion domains → torbrowser-launcher
+#          - Everything else → LibreWolf
+
+
+for url in "$@"; do
+    host=$(printf '%s\n' "$url" | sed -E 's#^[^/]*//([^/]+).*#\1#')
+
+    case "$host" in
+        *blogspot.*|*medium.*|*wordpress.*|*ghost.*)
+            surf "$url" & ;;
+        *.onion)
+            torbrowser-launcher "$url" & ;;
+        *)
+            librewolf "$url" & ;;
+    esac
+done
+
+wait

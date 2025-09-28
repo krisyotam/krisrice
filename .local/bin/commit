@@ -1,0 +1,98 @@
+#!/bin/bash
+# ============================================================
+# File: commit
+# Author: Kris Yotam
+# License: MIT
+# Date: 2025-09-28
+# Purpose: Minimal TUI helper for committing to the main branch.
+#          Modular, clean, suckless-style implementation.
+# ============================================================
+
+set -e
+
+# --- Functions ---
+
+ensure_repo() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "[Notice] Not inside a git repository."
+    read -rp "Initialize this directory as a git repo? (y/n): " ans
+    [ "$ans" = "y" ] && git init . || { echo "[Aborted] Not a git repository."; exit 0; }
+  fi
+}
+
+ensure_remote() {
+  if ! git remote | grep -q "origin"; then
+    echo "[Notice] No 'origin' remote set."
+    read -rp "Set a remote now? (y/n): " ans
+    if [ "$ans" = "y" ]; then
+      read -rp "Enter remote URL: " url
+      git remote add origin "$url"
+    else
+      echo "[Skipped] No remote set. Push will fail."
+    fi
+  fi
+}
+
+ensure_branch() {
+  if git show-ref --verify --quiet refs/heads/main; then
+    git checkout main >/dev/null 2>&1 || echo "[Warn] Could not switch to main."
+  else
+    echo "[Notice] 'main' branch not found."
+    read -rp "Create and switch to 'main'? (y/n): " ans
+    [ "$ans" = "y" ] && git checkout -b main
+  fi
+}
+
+stage_changes() {
+  git add -A
+}
+
+get_commit_message() {
+  while true; do
+    read -rp "Enter commit message: " msg
+    [ -z "$msg" ] && { echo "[Warn] Commit message cannot be empty."; continue; }
+    echo "Commit message: \"$msg\""
+    read -rp "Use this message? (y/n): " confirm
+    [ "$confirm" = "y" ] && break
+  done
+}
+
+make_commit() {
+  if git commit -m "$msg"; then
+    commit_hash=$(git rev-parse --short HEAD)
+    commit_num=$(git rev-list --count HEAD)
+  else
+    echo "[Notice] Nothing to commit."
+    exit 0
+  fi
+}
+
+push_changes() {
+  if git remote | grep -q "origin"; then
+    git push -u origin main || echo "[Warn] Push failed."
+  else
+    echo "[Notice] No remote to push to."
+  fi
+}
+
+summary() {
+  echo "========================================"
+  echo " Commit #$commit_num"
+  echo " Hash: $commit_hash"
+  echo " Message: $msg"
+  echo " Branch: main"
+  if git remote get-url origin >/dev/null 2>&1; then
+    echo " Remote: $(git remote get-url origin)"
+  fi
+  echo "========================================"
+}
+
+# --- Main flow ---
+ensure_repo        # makes sure you’re in a git repo or initializes one
+ensure_remote      # checks for a remote, lets you add one if missing
+ensure_branch      # switches to main, or offers to create it
+stage_changes      # stages all file changes (git add -A)
+get_commit_message # asks you for a commit message and confirms it
+make_commit        # commits and stores commit hash + number
+push_changes       # pushes to origin/main if remote exists
+summary            # prints a clean summary block

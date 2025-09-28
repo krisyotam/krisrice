@@ -41,3 +41,18 @@ alias torrent='qbittorrent &'
 alias discord='flatpak run com.discordapp.Discord &'
 alias steam="flatpak run com.valvesoftware.Steam"
 alias vscode='flatpak run com.visualstudio.code &'
+
+
+# Networking
+
+
+# Wireless
+
+
+# OSINT
+
+
+# Payloads
+
+
+# Hash Cracking

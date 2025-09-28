@@ -1,4 +1,4 @@
-# Luke's config for the Zoomer Shell
+# Kris's config for Zsh
 
 # Enable colors and change prompt:
 autoload -U colors && colors	# Load colors
@@ -81,6 +81,9 @@ bindkey -M visual '^[[P' vi-delete
 # Load syntax highlighting; should be last.
 [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 
-export BROWSER=chromium
+# Function to open URLs in different browsers based on the URL pattern.
+# Uses surf for blog platforms, torbrowser for .onion sites, and librewolf for everything else.
+# Uses the script at ~/.local/bin/browser
+export BROWSER=browser
 
   

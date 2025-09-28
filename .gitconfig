@@ -1,0 +1,32 @@
+# ~/.gitconfig
+# Global Git configuration for multiple identities
+# This file includes profile-specific configs based on repo location
+
+# Default profile (fallback if no includeIf matches)
+[user]
+    name  = Kris Yotam
+    email = krisyotam@protonmail.com
+
+# Work profile: applies to repos under ~/Dev/work/
+[includeIf "gitdir:~/Dev/work/"]
+    path = ~/.gitconfig-work
+
+# Personal profile: applies to repos under ~/Dev/personal/
+[includeIf "gitdir:~/Dev/personal/"]
+    path = ~/.gitconfig-personal
+
+# Optional: add more profile includes here
+
+# Common settings
+[color]
+    ui = auto
+
+[core]
+    editor = nvim
+
+[alias]
+    st = status -sb
+    co = checkout
+    br = branch
+    ci = commit
+    lg = log --oneline --graph --decorate
