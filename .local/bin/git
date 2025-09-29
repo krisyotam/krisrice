@@ -1,0 +1,64 @@
+#!/bin/sh
+#
+# ───────────────────────────────────────────────
+#  Kris Yotam (aka. khr1st) — Git Profile Switcher
+#  Location: ~/.local/bin/git
+#  License: MIT
+#  Purpose:
+#      Select a git profile by name and set global
+#      author/committer name + email accordingly.
+#
+#  Usage:
+#      git <profile>
+#        Ex: git krisyotam
+#            git khr1st
+#
+#  Dependencies: POSIX shell, git
+#  Profiles File: ~/.config/git-profiles
+#     Format (key=value per line):
+#         [profile]
+#         name=Your Name
+#         email=your@email
+#
+#  Date: 2025-09-29
+# ───────────────────────────────────────────────
+#
+
+PROFILES_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/git-profiles"
+
+usage() {
+    echo "Usage: git <profile>"
+    echo "Profiles are defined in: $PROFILES_FILE"
+    exit 1
+}
+
+[ $# -ne 1 ] && usage
+PROFILE="$1"
+
+# Parse the profiles file
+if ! grep -q "^\[$PROFILE\]" "$PROFILES_FILE" 2>/dev/null; then
+    echo "Profile '$PROFILE' not found in $PROFILES_FILE"
+    exit 1
+fi
+
+NAME=$(awk -F= -v p="[$PROFILE]" '
+    $0 == p {f=1; next}
+    f && /^name=/ {print $2; exit}
+' "$PROFILES_FILE")
+
+EMAIL=$(awk -F= -v p="[$PROFILE]" '
+    $0 == p {f=1; next}
+    f && /^email=/ {print $2; exit}
+' "$PROFILES_FILE")
+
+if [ -z "$NAME" ] || [ -z "$EMAIL" ]; then
+    echo "Incomplete config for '$PROFILE'"
+    exit 1
+fi
+
+git config --global user.name "$NAME"
+git config --global user.email "$EMAIL"
+
+echo "Active git profile: $PROFILE"
+echo "  Name : $NAME"
+echo "  Email: $EMAIL"

@@ -1,0 +1,63 @@
+#!/bin/sh
+# ==============================================================
+#  Laptop HiDPI Setup Script
+# --------------------------------------------------------------
+#  Author   : Kris Yotam (aka. khr1st)
+#  Contact  : krisyotam@protonmail.com
+#  License  : GNU GPLv3
+#  Date     : 2025-09-29
+# --------------------------------------------------------------
+#  Description:
+#    - Set xrandr DPI to 130 (immediate effect).
+#    - Update ~/.xprofile to persist DPI.
+#    - Update ~/.Xresources to enlarge terminal fonts and DPI.
+#    - Backups are made before modifying files.
+#    - Created for Macbook Pro 2015 13" Retina (Model A1502)
+# ==============================================================
+
+DPI_VALUE=130
+FONT="Monospace:size=14"
+
+# --- Apply change immediately ---
+xrandr --dpi "$DPI_VALUE"
+
+# --- Backup and patch ~/.xprofile ---
+XPROFILE="$HOME/.xprofile"
+if [ -f "$XPROFILE" ]; then
+    cp "$XPROFILE" "$XPROFILE.bak.$(date +%s)"
+    if grep -q "xrandr --dpi" "$XPROFILE"; then
+        # Replace existing dpi line
+        sed -i "s/^xrandr --dpi .*/xrandr --dpi $DPI_VALUE         # Set DPI. User may want to use a larger number for larger screens./" "$XPROFILE"
+    else
+        # Append if no dpi line
+        echo "xrandr --dpi $DPI_VALUE         # Set DPI" >> "$XPROFILE"
+    fi
+else
+    echo "#!/bin/sh" > "$XPROFILE"
+    echo "xrandr --dpi $DPI_VALUE         # Set DPI" >> "$XPROFILE"
+fi
+
+# --- Backup and patch ~/.Xresources ---
+XRES="$HOME/.Xresources"
+[ -f "$XRES" ] && cp "$XRES" "$XRES.bak.$(date +%s)"
+
+# Ensure DPI line
+if grep -q "^Xft.dpi:" "$XRES" 2>/dev/null; then
+    sed -i "s/^Xft.dpi:.*/Xft.dpi: $DPI_VALUE/" "$XRES"
+else
+    echo "Xft.dpi: $DPI_VALUE" >> "$XRES"
+fi
+
+# Ensure terminal font line
+if grep -q "^st.font:" "$XRES" 2>/dev/null; then
+    sed -i "s/^st.font:.*/st.font: $FONT/" "$XRES"
+else
+    echo "st.font: $FONT" >> "$XRES"
+fi
+
+# --- Apply Xresources immediately ---
+xrdb -merge "$XRES"
+
+echo "[ok] DPI set to $DPI_VALUE and made persistent."
+echo "[ok] Terminal font set to $FONT."
+echo "[ok] Backups created with timestamp suffix."

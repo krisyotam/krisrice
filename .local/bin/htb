@@ -1,0 +1,251 @@
+#!/bin/sh
+# ==============================================================
+#  HTB Writeup Scaffolder (htb)
+# --------------------------------------------------------------
+#  Author   : Kris Yotam (aka. khr1st)
+#  Contact  : krisyotam@protonmail.com
+#  License  : GNU GPLv3
+#  Date     : 2025-09-29
+# --------------------------------------------------------------
+#  Description:
+#    - Interactive scaffold for HackTheBox writeups.
+#    - Creates directory under:
+#        /home/krisyotam/Notes/krisyotam/Writeups/HackTheBox
+#      with subdirs: Machines, Challenges, Starting Point.
+#    - For Machines/Challenges asks Active|Retired and difficulty
+#      (Machines: Easy, Medium, Hard, Insane).
+#    - For Starting Point asks Tier (0, I, II).
+#    - Produces a writeup file named HTB_<CamelCaseName>
+#      inside the box directory and prints an ASCII banner.
+#    - Minimal, functionized, suckless-minded.
+# ==============================================================
+
+set -eu
+
+# config
+BASE="/home/krisyotam/Notes/krisyotam/Writeups/HackTheBox"
+BIN_NAME="htb"
+
+# ASCII banner printed to terminal (visible TUI header)
+ascii_banner() {
+cat <<'BANNER'
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⢀⣠⣤⣤⠴⠶⠾⠿⠿⠿⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠁⠀⠀⠀⣰⡿⠥⠤⠤⠶⠶⠶⠶⠖⣒⣒⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⣩⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⢈⣉⡛⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⡥⠚⠁⠀⠀⠀⠀⠀⠀⠀⠀⠒⠒⠒⠉⠉⠉⠁⠀⠀⠀⠀⢈⣉⡒⠯⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠁⠀⢀⣀⡠⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⣺⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢋⣠⣤⣶⣿⠝⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡤⠒⠀⠀⠀⠀⠀⠀⠀⢀⡤⠒⠉⢩⠄⠀⠙⢿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡠⣴⠎⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠑⢻⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠁⠀⠀⠀⡠⠀⠀⣠⣀⣤⠒⠋⠁⡴⠁⠀⠀⠀⠀⠀⢀⢄⡜⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢯⠻⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⠀⢀⠄⡠⠊⢀⡤⠖⠉⠈⢻⡳⡀⢠⠃⠀⠀⠀⠀⢀⣴⡿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⡆⠹⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⢀⡔⣡⣞⣡⣶⣡⣤⣄⠀⠀⠀⠹⣧⡎⠀⠄⡔⠀⡴⡻⠋⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⡀⢹
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢁⣔⣿⣾⣿⣿⣿⣿⠟⣛⣿⣧⠐⡄⠀⢿⠀⡘⠞⢠⢎⠞⠁⠀⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⢰⢸⡏⡇⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣱⣾⠟⣽⣫⣍⣾⡿⢁⡼⢋⣌⢽⡇⠸⠀⡼⠀⠉⡰⣳⠋⠀⠀⠀⢠⠀⠀⠀⠀⠠⠀⠀⠀⠀⠀⠀⠀⠀⠈⡜⣼⡇⡇⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠴⠋⠀⣼⢋⣽⡟⠀⠁⢸⠀⠘⠤⢿⡇⠀⠀⡇⠀⢐⡿⠁⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⢓⣿⡇⣱⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⢀⣞⣵⣿⢿⠁⠀⠀⠈⠢⠤⠤⠚⠁⠀⢨⠁⢠⠞⠀⠀⠀⠀⠀⠀⠘⠀⠀⠀⠀⠀⠀⢀⠀⢀⡎⠀⠀⢠⢡⣿⡟⠇⡇⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀⢀⡼⠋⢸⡞⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡰⠃⠀⠀⠀⠐⠲⢦⣄⡀⡆⠀⠀⠀⢠⠀⣮⢇⡞⠀⡴⣠⢣⢳⡿⡸⢰⠃⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⠀⠀⠁⠀⠀⣿⠃⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠁⠀⠀⠀⠀⠀⠀⠀⠈⠻⡅⠀⠀⠀⡆⡜⢈⣾⡁⡐⡱⢣⢣⣿⡵⢁⡿⠤⢔
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠀⠀⠀⠀⠀⠀⣿⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣀⣀⠂⠄⠀⠀⠀⡇⠀⠀⠀⢠⢁⢎⣜⡞⡴⣱⣷⣿⡟⢡⣾⠶⣶⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⡿⣖⣇⠀⠀⢠⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠙⠻⣶⣄⠀⠀⡇⠀⠀⠀⣎⡞⢎⢎⡜⣼⣿⡿⢋⣴⠋⣁⣼⣿⣿
+⠟⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠿⡏⠀⠀⠀⠀⠀⠀⠀⣿⣾⣾⠀⠀⠀⠑⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢻⣧⡀⡇⠀⠀⠀⠜⠃⢈⠞⣾⣿⢋⣴⢟⣻⣩⠿⢿⣿⣿
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠁⠀⠀⠀⠀⠀⠀⢀⡼⠛⣿⣇⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣇⡇⠀⠀⠀⠀⠠⣋⣾⢟⣥⣿⣋⣴⠛⠃⠀⠀⢹⣿
+⠀⠀⠀⠉⠉⠁⠈⠉⠉⠐⠲⠤⣀⠇⠀⡀⣠⠄⠐⠐⠒⠉⠀⠈⠉⠙⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠔⠋⣇⡀⠀⠀⢠⣾⢟⡵⠟⠻⣆⣽⣿⣶⣶⣶⣦⣼⣿
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⢿⢲⠁⠀⠀⠀⠀⠀⠀⠀⠀⢀⢼⢿⣍⣒⢂⡠⠀⠀⠀⢄⣀⠀⠀⠀⣀⣤⠞⢁⡴⠊⠀⠉⠓⠶⣿⡿⢟⣶⣲⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣘⡇⡇⠀⠀⠀⠀⠀⠀⠀⢀⡴⠋⣼⣿⠏⠛⠉⠀⠀⠀⠀⠀⠈⢙⢻⣫⠟⢁⠞⠁⠀⠀⠀⠀⠀⠀⠀⠉⠛⠻⣍⡀⢀⣿⣿⣿⣿⣿⣏⣹⡟
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣬⣿⣳⠀⠀⠀⠀⠀⠀⢀⡴⣟⠁⡜⠀⠀⠀⠀⠀⠀⠀⠀⠠⣤⡀⠈⣆⢯⣀⣿⡴⠀⣀⡠⠔⠚⠋⠀⠀⠀⠀⠀⠀⠻⣾⣿⣿⣿⣿⣿⣿⡟⠀
+⠀⠀⠀⠀⠀⠀⠀⣠⠏⠀⣐⣿⠋⢸⡇⠀⠀⠀⣀⣴⠞⢻⠃⢀⡟⠀⠀⠀⢀⣠⡖⠉⣻⡿⠶⣬⠿⢦⣈⣯⣿⣯⣤⠾⠳⠒⠒⢚⡍⢙⠋⠲⢄⣀⠀⠀⠹⣿⣿⣿⣿⣿⣿⠁⠀
+⣀⠀⠀⠀⠀⠀⣰⠇⣠⣽⠞⠁⠀⢯⡇⠤⠒⠛⣃⣀⣀⡜⢠⠞⠀⠀⠀⢰⠋⢸⣦⡉⠁⣀⣼⣧⡀⠀⠸⣽⠀⠀⠀⠀⠀⠀⠰⠟⠁⢘⠀⠀⢰⡌⠀⠀⠀⠙⢿⣛⣛⣛⠃⠀⠀
+⢾⣳⡀⠀⠀⠚⢡⢒⠞⠁⠀⠀⠀⣀⣉⣀⣀⣠⠏⠀⣾⡿⠃⠀⠀⠀⠀⠋⠀⠀⢿⣷⣠⣾⣿⢻⣅⠀⠀⠃⠀⠀⠀⠀⠀⠀⠀⠀⢀⡞⠀⠀⠀⠹⣆⠀⠀⠀⠀⠛⣿⣿⣷⡄⠀
+⠀⢹⣷⣀⣠⣶⣏⠤⠒⣲⠾⢫⢽⢳⣖⣶⣿⣿⠀⠐⡟⠁⠀⠀⠀⠀⠀⠀⠀⢀⡈⣿⡟⣽⣿⠃⠀⠉⠲⠤⣄⣀⠀⠀⠀⠀⠀⢠⠏⠀⠀⠀⠀⠀⠘⡆⠀⠀⠀⠀⠘⢿⣿⣿⠀
+⠀⠀⣤⣻⠿⠥⡞⡗⢺⣿⣽⣿⣽⡿⣿⣿⣿⣿⣇⠀⢃⠀⠀⠀⠀⣸⠁⠀⠀⠈⠁⠈⠑⠻⠆⠀⠀⠀⠀⠀⠀⠈⠉⠒⠤⠤⠒⠉⠀⠀⠀⠀⠀⠀⠀⠸⡄⠀⠀⠀⠀⠈⢻⣿⠀
+⠀⠀⢦⣟⣻⣾⣭⣭⡽⠶⠶⠶⠶⣤⣦⠖⠿⣯⡿⡄⠘⡆⠀⠀⡼⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠢⡄⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⣀⣀⣤⡝⢆⠀⠀⠀⠀⠈⡿⠀
+⠂⠀⠈⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⡾⡭⣗⢣⢹⡀⠘⣄⠞⣡⣤⣤⣤⣴⣶⣶⣿⣽⠿⠉⠉⠁⠒⠒⠤⣧⠤⠴⢲⢶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⢦⡀⠀⢀⠇⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠃⣿⢨⠇⢳⡀⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠓⠀⠀⠀⠀⠀⠈⠁⠀⠀⡞⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡍⠁⡸⠀⢠
+⣤⣤⣤⢤⣤⣤⣄⡀⣠⣀⣀⣾⣤⠀⠄⠈⡀⣸⡏⠀⢘⣷⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⠿⡗⠦⣀⣀⡀⠀⠀⠀⠀⠀⡇⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⠇⠀⣼
+
+   HTB Writeup Scaffolder — Kris Yotam (aka. khr1st)
+   Contact  : krisyotam@protonmail.com
+   License  : GNU GPLv3
+   Date     : 2025-09-29
+BANNER
+}
+
+# Utilities -----------------------------------------------------------------
+prompt() {
+    # prompt <varname> <message>
+    varname=$1; shift
+    msg=$*
+    printf "%s " "$msg"
+    # POSIX read into a temp var then export to caller via eval
+    IFS= read -r _answer || _answer=''
+    eval "$varname=\"\$_answer\""
+}
+
+choose_one() {
+    # choose_one <message> <opt1> <opt2> ...
+    msg=$1; shift
+    opts="$@"
+    while :; do
+        printf "%s\n" "$msg"
+        i=1
+        for opt in $opts; do
+            printf "  %d) %s\n" "$i" "$opt"
+            i=$((i + 1))
+        done
+        printf "Choice [1-%d]: " $((i - 1))
+        IFS= read -r choice || choice=''
+        case "$choice" in
+            ''|*[!0-9]*)
+                printf "Invalid. Enter a number.\n" ;;
+            *)
+                if [ "$choice" -ge 1 ] 2>/dev/null && [ "$choice" -lt "$i" ] 2>/dev/null; then
+                    # return the selected option
+                    set -- $opts
+                    shift $((choice - 1))
+                    printf "%s\n" "$1"
+                    return 0
+                else
+                    printf "Out of range.\n"
+                fi
+                ;;
+        esac
+    done
+}
+
+lower_sanitize() {
+    # convert to lowercase and replace non-alnum with underscore
+    printf "%s" "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g'
+}
+
+camelcase_join() {
+    # join words into CamelCase, remove non-alnum
+    # uses awk for portability
+    printf "%s" "$*" | awk '{
+        n = split($0, a, /[^[:alnum:]]+/)
+        for (i=1;i<=n;i++) {
+            if (a[i] == "") continue
+            $i = toupper(substr(a[i],1,1)) tolower(substr(a[i],2))
+            printf "%s", $i
+        }
+    }'
+}
+
+ensure_dir() {
+    if [ ! -d "$1" ]; then
+        mkdir -p "$1" || { printf "Failed to create %s\n" "$1" >&2; exit 1; }
+        printf "created: %s\n" "$1"
+    fi
+}
+
+# Prepare base layout -------------------------------------------------------
+prepare_layout() {
+    ensure_dir "$BASE"
+    ensure_dir "$BASE/Challenges"
+    ensure_dir "$BASE/Machines"
+    ensure_dir "$BASE/Starting Point"
+    ensure_dir "$BASE/Challenges/Active"
+    ensure_dir "$BASE/Challenges/Retired"
+    ensure_dir "$BASE/Machines/Active"
+    ensure_dir "$BASE/Machines/Retired"
+    ensure_dir "$BASE/Starting Point/Tier 0"
+    ensure_dir "$BASE/Starting Point/Tier I"
+    ensure_dir "$BASE/Starting Point/Tier II"
+}
+
+# Compose writeup header exactly as requested --------------------------------
+compose_writeup() {
+    name_print="$1"
+    type_print="$2"
+    status_print="$3"
+    difficulty_print="$4"
+    permalink_name="$5"
+    file_path="$6"
+
+    # ensure no blank lines inside the YAML-like front matter
+    cat > "$file_path" <<EOF
+HTB_Name: ---
+cover:
+description: a write up of the ${name_print}, a ${type_print} on HackTheBox
+permalink: htb-${type_print,,}-${permalink_name}
+---
+#### ${name_print} "Writeup"
+---
+Type: ${type_print}
+Status: ${status_print}
+Difficulty: ${difficulty_print}
+Topic(s): [[HackTheBox]]
+EOF
+    printf "Wrote: %s\n" "$file_path"
+}
+
+# Main ----------------------------------------------------------------------
+main() {
+    ascii_banner
+    printf "\n"
+
+    # box name
+    prompt BOXNAME "What is the name of the box (letters/numbers/spaces)"
+    BOXNAME="$(printf "%s" "$BOXNAME" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    if [ -z "$BOXNAME" ]; then
+        printf "Name required. Exiting.\n" >&2
+        exit 1
+    fi
+
+    DIR_NAME="$(lower_sanitize "$BOXNAME")"
+    FILE_BASENAME="$(camelcase_join "$BOXNAME")"
+    WRITEUP_FILENAME="HTB_${FILE_BASENAME}"
+
+    prepare_layout
+
+    # Type selection
+    TYPE="$(choose_one "Is this a Machine, Challenge, or Starting Point?" "Machine" "Challenge" "Starting Point")"
+
+    TIER="N/A"
+    STATUS="N/A"
+    DIFFICULTY="N/A"
+    DEST_DIR=""
+
+    if [ "$TYPE" = "Starting Point" ]; then
+        TIER_CHOICE="$(choose_one "Which tier?" "0" "I" "II")"
+        case "$TIER_CHOICE" in
+            0) TIER="Tier 0"; DEST_DIR="${BASE}/Starting Point/Tier 0" ;;
+            I) TIER="Tier I"; DEST_DIR="${BASE}/Starting Point/Tier I" ;;
+            II) TIER="Tier II"; DEST_DIR="${BASE}/Starting Point/Tier II" ;;
+        esac
+    else
+        STATUS="$(choose_one "Is it Active or Retired?" "Active" "Retired")"
+        if [ "$TYPE" = "Machine" ]; then
+            DIFFICULTY="$(choose_one "Machine difficulty" "Easy" "Medium" "Hard" "Insane")"
+            DEST_DIR="${BASE}/Machines/${STATUS}"
+        else
+            DIFFICULTY="$(choose_one "Challenge difficulty" "Easy" "Medium" "Hard")"
+            DEST_DIR="${BASE}/Challenges/${STATUS}"
+        fi
+    fi
+
+    TARGET_DIR="${DEST_DIR}/${DIR_NAME}"
+    ensure_dir "$TARGET_DIR"
+
+    WRITEUP_PATH="${TARGET_DIR}/${WRITEUP_FILENAME}"
+
+    if [ -e "$WRITEUP_PATH" ]; then
+        CHOICE="$(choose_one "Writeup exists. Overwrite, Append, Abort?" "Overwrite" "Append" "Abort")"
+        case "$CHOICE" in
+            Overwrite) : > "$WRITEUP_PATH" ;;
+            Append)  printf "\n\n" >> "$WRITEUP_PATH" ;;
+            Abort)    printf "Aborted.\n"; exit 0 ;;
+        esac
+    else
+        : > "$WRITEUP_PATH"
+    fi
+
+    # Compose file header
+    # Convert TYPE to single-word friendly form for permalink: machine/challenge/starting_point
+    type_perm="$(printf "%s" "$TYPE" | tr '[:upper:]' '[:lower:]' | sed 's/ /_/g')"
+    compose_writeup "$BOXNAME" "$TYPE" "$STATUS" "$DIFFICULTY" "$DIR_NAME" "$WRITEUP_PATH"
+
+    printf "\nCreated writeup at: %s\n" "$WRITEUP_PATH"
+    printf "Open and edit to add notes.\n"
+}
+
+main "$@"

@@ -1,15 +1,29 @@
 #!/bin/sh
+# ==============================================================
+#  Kris's Auto Rice Bootstrapping Script (KARBS)
+# --------------------------------------------------------------
+#  Author   : Kris Yotam (aka. khr1st)
+#  Contact  : krisyotam@protonmail.com
+#  License  : GNU GPLv3
+#  Date     : 2025-09-29
+# --------------------------------------------------------------
+#  Description:
+#    Minimal, automated Arch Linux ricing setup inspired by
+#    suckless philosophy. Configures essential tools, dotfiles,
+#    and packages for a fast, lean environment.
+# --------------------------------------------------------------
+#  Inspiration:
+#    Based on concepts from Luke Smith’s LARBS, refined into my
+#    own streamlined workflow.
+# ==============================================================
 
-# Kris's Auto Rice Bootstrapping Script (KARBS)
-# by Kris Yotam <krisyotam@protonmail.com>
-# License: GNU GPLv3
 
 ### OPTIONS AND VARIABLES ###
   
 dotfilesrepo="https://github.com/krisyotam/krisrice.git"
-progsfile="https://raw.githubusercontent.com/krisyotam/krisrice/master/installer/progs/karbs.csv"
+progsfile="https://raw.githubusercontent.com/krisyotam/krisrice/main/installer/progs/karbs.csv"
 aurhelper="yay"
-repobranch="master"
+repobranch="main"
 export TERM=ansi
 
 rssurls="$(cat <<'EOF'
