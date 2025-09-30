@@ -22,9 +22,57 @@
 
 set -eu
 
-# config
+# ============================================================
+# CONFIGURATION - Modify these paths and settings as needed
+# ============================================================
+
+# Base directory for all HTB writeups
 BASE="/home/krisyotam/Notes/krisyotam/Writeups/HackTheBox"
+
+# Script binary name
 BIN_NAME="htb"
+
+# Directory structure
+CHALLENGES_DIR="Challenges"
+MACHINES_DIR="Machines"
+STARTING_POINT_DIR="Starting Point"
+
+# Status subdirectories
+ACTIVE_SUBDIR="Active"
+RETIRED_SUBDIR="Retired"
+
+# Starting Point tiers
+TIER_0_DIR="Tier 0"
+TIER_I_DIR="Tier I"
+TIER_II_DIR="Tier II"
+
+# File naming
+WRITEUP_PREFIX="HTB_"
+
+# Difficulty levels
+MACHINE_DIFFICULTIES="Very Easy Easy Medium Hard Insane"
+CHALLENGE_DIFFICULTIES="Very Easy Easy Medium Hard"
+STARTING_POINT_DIFFICULTIES="Very Easy Easy Medium Hard"
+
+# Type options
+TYPE_OPTIONS="Machine Challenge Starting Point"
+
+# Status options  
+STATUS_OPTIONS="Active Retired"
+
+# Tier options
+TIER_OPTIONS="0 I II"
+
+# File handling options
+OVERWRITE_OPTIONS="Overwrite Append Abort"
+
+# Contact and metadata
+AUTHOR_NAME="Kris Yotam (aka. khr1st)"
+AUTHOR_EMAIL="krisyotam@protonmail.com"
+LICENSE="GNU GPLv3"
+SCRIPT_DATE="2025-09-29"
+
+# ============================================================
 
 # ASCII banner printed to terminal (visible TUI header)
 ascii_banner() {
@@ -63,10 +111,10 @@ cat <<'BANNER'
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠃⣿⢨⠇⢳⡀⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠓⠀⠀⠀⠀⠀⠈⠁⠀⠀⡞⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡍⠁⡸⠀⢠
 ⣤⣤⣤⢤⣤⣤⣄⡀⣠⣀⣀⣾⣤⠀⠄⠈⡀⣸⡏⠀⢘⣷⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⠿⡗⠦⣀⣀⡀⠀⠀⠀⠀⠀⡇⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣤⠇⠀⣼
 
-   HTB Writeup Scaffolder — Kris Yotam (aka. khr1st)
-   Contact  : krisyotam@protonmail.com
-   License  : GNU GPLv3
-   Date     : 2025-09-29
+   HTB Writeup Scaffolder — ${AUTHOR_NAME}
+   Contact  : ${AUTHOR_EMAIL}
+   License  : ${LICENSE}
+   Date     : ${SCRIPT_DATE}
 BANNER
 }
 
@@ -140,16 +188,16 @@ ensure_dir() {
 # Prepare base layout -------------------------------------------------------
 prepare_layout() {
     ensure_dir "$BASE"
-    ensure_dir "$BASE/Challenges"
-    ensure_dir "$BASE/Machines"
-    ensure_dir "$BASE/Starting Point"
-    ensure_dir "$BASE/Challenges/Active"
-    ensure_dir "$BASE/Challenges/Retired"
-    ensure_dir "$BASE/Machines/Active"
-    ensure_dir "$BASE/Machines/Retired"
-    ensure_dir "$BASE/Starting Point/Tier 0"
-    ensure_dir "$BASE/Starting Point/Tier I"
-    ensure_dir "$BASE/Starting Point/Tier II"
+    ensure_dir "$BASE/$CHALLENGES_DIR"
+    ensure_dir "$BASE/$MACHINES_DIR"
+    ensure_dir "$BASE/$STARTING_POINT_DIR"
+    ensure_dir "$BASE/$CHALLENGES_DIR/$ACTIVE_SUBDIR"
+    ensure_dir "$BASE/$CHALLENGES_DIR/$RETIRED_SUBDIR"
+    ensure_dir "$BASE/$MACHINES_DIR/$ACTIVE_SUBDIR"
+    ensure_dir "$BASE/$MACHINES_DIR/$RETIRED_SUBDIR"
+    ensure_dir "$BASE/$STARTING_POINT_DIR/$TIER_0_DIR"
+    ensure_dir "$BASE/$STARTING_POINT_DIR/$TIER_I_DIR"
+    ensure_dir "$BASE/$STARTING_POINT_DIR/$TIER_II_DIR"
 }
 
 # Compose writeup header exactly as requested --------------------------------
@@ -193,12 +241,12 @@ main() {
 
     DIR_NAME="$(lower_sanitize "$BOXNAME")"
     FILE_BASENAME="$(camelcase_join "$BOXNAME")"
-    WRITEUP_FILENAME="HTB_${FILE_BASENAME}"
+    WRITEUP_FILENAME="${WRITEUP_PREFIX}${FILE_BASENAME}"
 
     prepare_layout
 
     # Type selection
-    TYPE="$(choose_one "Is this a Machine, Challenge, or Starting Point?" "Machine" "Challenge" "Starting Point")"
+    TYPE="$(choose_one "Is this a Machine, Challenge, or Starting Point?" $TYPE_OPTIONS)"
 
     TIER="N/A"
     STATUS="N/A"
@@ -206,20 +254,21 @@ main() {
     DEST_DIR=""
 
     if [ "$TYPE" = "Starting Point" ]; then
-        TIER_CHOICE="$(choose_one "Which tier?" "0" "I" "II")"
+        TIER_CHOICE="$(choose_one "Which tier?" $TIER_OPTIONS)"
+        DIFFICULTY="$(choose_one "Starting Point difficulty" $STARTING_POINT_DIFFICULTIES)"
         case "$TIER_CHOICE" in
-            0) TIER="Tier 0"; DEST_DIR="${BASE}/Starting Point/Tier 0" ;;
-            I) TIER="Tier I"; DEST_DIR="${BASE}/Starting Point/Tier I" ;;
-            II) TIER="Tier II"; DEST_DIR="${BASE}/Starting Point/Tier II" ;;
+            0) TIER="$TIER_0_DIR"; DEST_DIR="$BASE/$STARTING_POINT_DIR/$TIER_0_DIR" ;;
+            I) TIER="$TIER_I_DIR"; DEST_DIR="$BASE/$STARTING_POINT_DIR/$TIER_I_DIR" ;;
+            II) TIER="$TIER_II_DIR"; DEST_DIR="$BASE/$STARTING_POINT_DIR/$TIER_II_DIR" ;;
         esac
     else
-        STATUS="$(choose_one "Is it Active or Retired?" "Active" "Retired")"
+        STATUS="$(choose_one "Is it Active or Retired?" $STATUS_OPTIONS)"
         if [ "$TYPE" = "Machine" ]; then
-            DIFFICULTY="$(choose_one "Machine difficulty" "Easy" "Medium" "Hard" "Insane")"
-            DEST_DIR="${BASE}/Machines/${STATUS}"
+            DIFFICULTY="$(choose_one "Machine difficulty" $MACHINE_DIFFICULTIES)"
+            DEST_DIR="$BASE/$MACHINES_DIR/$STATUS"
         else
-            DIFFICULTY="$(choose_one "Challenge difficulty" "Easy" "Medium" "Hard")"
-            DEST_DIR="${BASE}/Challenges/${STATUS}"
+            DIFFICULTY="$(choose_one "Challenge difficulty" $CHALLENGE_DIFFICULTIES)"
+            DEST_DIR="$BASE/$CHALLENGES_DIR/$STATUS"
         fi
     fi
 
@@ -229,7 +278,7 @@ main() {
     WRITEUP_PATH="${TARGET_DIR}/${WRITEUP_FILENAME}"
 
     if [ -e "$WRITEUP_PATH" ]; then
-        CHOICE="$(choose_one "Writeup exists. Overwrite, Append, Abort?" "Overwrite" "Append" "Abort")"
+        CHOICE="$(choose_one "Writeup exists. Overwrite, Append, Abort?" $OVERWRITE_OPTIONS)"
         case "$CHOICE" in
             Overwrite) : > "$WRITEUP_PATH" ;;
             Append)  printf "\n\n" >> "$WRITEUP_PATH" ;;
@@ -242,7 +291,13 @@ main() {
     # Compose file header
     # Convert TYPE to single-word friendly form for permalink: machine/challenge/starting_point
     type_perm="$(printf "%s" "$TYPE" | tr '[:upper:]' '[:lower:]' | sed 's/ /_/g')"
-    compose_writeup "$BOXNAME" "$TYPE" "$STATUS" "$DIFFICULTY" "$DIR_NAME" "$WRITEUP_PATH"
+    
+    # For Starting Point, use TIER as status, otherwise use STATUS
+    if [ "$TYPE" = "Starting Point" ]; then
+        compose_writeup "$BOXNAME" "$TYPE" "$TIER" "$DIFFICULTY" "$DIR_NAME" "$WRITEUP_PATH"
+    else
+        compose_writeup "$BOXNAME" "$TYPE" "$STATUS" "$DIFFICULTY" "$DIR_NAME" "$WRITEUP_PATH"
+    fi
 
     printf "\nCreated writeup at: %s\n" "$WRITEUP_PATH"
     printf "Open and edit to add notes.\n"
