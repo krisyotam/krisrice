@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# ==============================================================
+#  appinstall - Run an AppImage from the current directory
+# --------------------------------------------------------------
+#  Author   : Kris Yotam
+#  Contact  : krisyotam@protonmail.com
+#  License  : GNU GPLv3
+#  Created  : 2025-10-04
+# --------------------------------------------------------------
+#  Description:
+#    - Finds *.AppImage files in a directory (current by default),
+#      makes them executable, and prompts the user to select one
+#      using fzf. If fzf is not available, the script launches the
+#      first found AppImage.
+#
+#    - This file is intended to be installed in a user's bin
+#      directory (e.g. ~/.local/bin/appinstall) and used as a
+#      small helper to run AppImage files.
+#
+#  Usage:
+#    appinstall [DIRECTORY]
+#    appinstall --help
+#
+#  Notes:
+#    - Uses bash-specific behavior (nullglob). Keeps behavior
+#      simple and robust against directories with no AppImage files.
+# ==============================================================
+
+set -euo pipefail
+
+# -------------------- Configuration (like config.py header) -----------------
+# Default directory to scan for AppImage files. Can be overridden by
+# passing a directory path as the first argument to the script.
+DEFAULT_DIR="."
+
+# fzf prompt text
+FZF_PROMPT="Select AppImage: "
+
+# ---------------------------------------------------------------------------
+
+print_help() {
+    cat <<'HELP'
+appinstall - Run an AppImage from the current directory
+
+Usage:
+  appinstall [DIRECTORY]
+  appinstall --help
+
+If DIRECTORY is omitted the current working directory is used. The
+script will make all found *.AppImage files executable before offering a
+selection (via fzf when available). If fzf is not installed the script
+will run the first AppImage found.
+HELP
+}
+
+# Make an array of AppImage files in the provided directory.
+# Uses bash nullglob so that when there are no matches the array is empty.
+find_appimages() {
+    local dir="$1"
+    # enable nullglob so the pattern expands to zero elements if no match
+    shopt -s nullglob
+    local -a arr=("$dir"/*.AppImage)
+    shopt -u nullglob
+    printf '%s\n' "${arr[@]}"
+}
+
+main() {
+    # Handle help request
+    if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+        print_help
+        return 0
+    fi
+
+    local dir="${1:-$DEFAULT_DIR}"
+
+    # Collect AppImage files (full paths)
+    IFS=$'\n' read -r -d '' -a apps < <(find_appimages "$dir" | sed '/^$/d' && printf '\0') || true
+
+    if [ ${#apps[@]} -eq 0 ]; then
+        printf "No AppImage files found in %s\n" "$dir" >&2
+        return 1
+    fi
+
+    # Make each AppImage executable (best-effort)
+    for f in "${apps[@]}"; do
+        chmod +x -- "$f" 2>/dev/null || true
+    done
+
+    # If fzf is available, let the user choose; otherwise pick the first
+    if command -v fzf >/dev/null 2>&1; then
+        # Present only basenames to the user and map selection back to the full path
+        local sel_basename
+        sel_basename=$(printf '%s\n' "${apps[@]##*/}" | fzf --prompt="$FZF_PROMPT") || sel_basename=''
+
+        if [ -z "$sel_basename" ]; then
+            # no selection (user pressed ESC or similar)
+            printf "No selection made. Exiting.\n"
+            return 0
+        fi
+
+        local selected_path
+        # If the user supplied a directory path, selected basename may or may not include the dir
+        if [[ "$dir" == "." ]]; then
+            selected_path="$sel_basename"
+        else
+            selected_path="$dir/$sel_basename"
+        fi
+
+        # Run the selected AppImage (replace this shell with the AppImage)
+        exec -- "$selected_path"
+    else
+        # fzf not installed - run the first found AppImage
+        printf "fzf not found; launching first AppImage: %s\n" "${apps[0]}"
+        exec -- "${apps[0]}"
+    fi
+}
+
+# If the script is sourced, don't run main automatically. When executed,
+# call main with positional arguments.
+if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
+    main "$@"
+fi
