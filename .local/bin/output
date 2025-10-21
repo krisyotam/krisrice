@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# ==============================================================
+#  Audio Output Switcher (PipeWire + pactl)
+# --------------------------------------------------------------
+#  Author   : Kris Yotam (aka. khr1st)
+#  Contact  : krisyotam@protonmail.com
+#  License  : GNU GPLv3
+#  Date     : 2025-10-21
+# --------------------------------------------------------------
+#  Description:
+#    Interactive utility to select an audio sink and route all
+#    active PipeWire/PulseAudio streams to it using pactl.
+#    Keeps a simple mapping of friendly names to sink IDs.
+# ==============================================================
+
+declare -A DEVICES=(
+  ["AirPods Max"]="bluez_output.90_62_3F_A3_22_43.1"
+  ["Corsair HS65"]="alsa_output.usb-Corsair_Corsair_HS65_SURROUND-00.analog-stereo"
+  ["HDMI Output"]="alsa_output.pci-0000_0c_00.1.hdmi-stereo"
+  ["Onboard Digital"]="alsa_output.pci-0000_0e_00.4.iec958-stereo"
+)
+
+check_connected() {
+  pactl list short sinks | awk '{print $2}' | grep -q "$1" && echo "Connected" || echo "Not Connected"
+}
+
+echo "───────────────────────────────"
+echo "   Audio Output Switcher"
+echo "───────────────────────────────"
+
+i=1
+declare -A CHOICES
+for name in "${!DEVICES[@]}"; do
+  sink="${DEVICES[$name]}"
+  status=$(check_connected "$sink")
+  printf "%d) %-20s [%s]\n" "$i" "$name" "$status"
+  CHOICES["$i"]="$sink"
+  ((i++))
+done
+
+echo "───────────────────────────────"
+read -rp "Select a device: " choice
+
+sink="${CHOICES[$choice]}"
+if [[ -z "$sink" ]]; then
+  echo "Invalid choice. Try again next time, champ."
+  exit 1
+fi
+
+echo "Setting default sink to $sink..."
+pactl set-default-sink "$sink" 2>/dev/null
+
+inputs=$(pactl list short sink-inputs | awk '{print $1}')
+if [[ -z "$inputs" ]]; then
+  echo "No active streams. Default updated anyway."
+else
+  echo "Moving active streams..."
+  for input in $inputs; do
+    pactl move-sink-input "$input" "$sink"
+  done
+fi
+
+echo "Done. If it still doesn’t play, blame Bluetooth, not me."

@@ -1,13 +1,19 @@
 #!/bin/sh
+# ==============================================================
+#  Kris Yotam: Quantum Processing Unit Setup (QPU)
+# --------------------------------------------------------------
+#  Author   : Kris Yotam (aka. khr1st)
+#  Contact  : krisyotam@protonmail.com
+#  License  : GNU GPLv3
+#  Date     : 2025-09-29
+# --------------------------------------------------------------
+#  Description:
+#    Automates the setup and configuration of a Quantum Processing
+#    Unit development environment. Installs Qiskit, Python
+#    toolchains, and optional integrations for IBM Quantum
+#    Experience. Review external API keys and credentials before
+#    running.
+# ==============================================================
 
-# Kris Yotam: Quantum Processing Unit (krisyotam-qpu)
-# Automated Bootstrapping Script
-# by Kris Yotam <krisyotam@protonmail.com>
-# License: GNU GPLv3
-
-# This script automates the setup and configuration of a Quantum Processing Unit (QPU) environment
-# It installs necessary software, configures system settings, and prepares the environment to
-# simulate a quantum computer using Qiskit. It has access to offload tasks to real quantum computers
-# via IBM Quantum Experience.
 
 ### OPTIONS AND VARIABLES ###

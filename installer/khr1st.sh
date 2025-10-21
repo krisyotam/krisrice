@@ -7,4 +7,9 @@
 # This script is a modified version of KARBS, tailored for my pentesting setup. 
 # It uses a more minimal set of applications, and installs the entire blackarch repo in their stead.
 
+
+
+
+
+
 ### OPTIONS AND VARIABLES ###

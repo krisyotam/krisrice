@@ -1,0 +1,16 @@
+# ==============================================================
+#  Hosts File (hosts)
+# --------------------------------------------------------------
+#  Maintainer: Kris Yotam (aka. khr1st)
+#  Contact   : krisyotam@protonmail.com
+#  License   : GNU GPLv3
+#  Date      : 2025-10-11
+# --------------------------------------------------------------
+#  Description:
+#    Local hosts mappings used for development and overrides.
+#    Add lines in the format: <IP> <hostname> [aliases...]
+# ==============================================================
+
+# Example placeholders:
+# 127.0.0.1   localhost
+# 192.168.1.10 nas.local
