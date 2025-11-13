@@ -1,24 +1,188 @@
-#!/bin/sh
+#!/usr/bin/env bash
+# ==============================================================
+#  browser - Simple browser dispatcher / launcher
+# --------------------------------------------------------------
+#  Author   : Kris Yotam
+#  Contact  : krisyotam@protonmail.com
+#  License  : GNU GPLv3
+#  Created  : 2025-10-27
+# --------------------------------------------------------------
+#  Description:
+#    Suckless, functionized launcher that routes URLs to the
+#    appropriate browser or lets the user pick a browser from a
+#    tiny TUI. Usage:
+#      browser                 # interactive chooser
+#      browser <name>          # launch specific browser (librewolf, brave, tor, surf)
+#      browser <url>           # dispatch URL to the preferred browser
+#      browser <name> <url>    # open URL with chosen browser
+#
+#    Dispatch rules (default):
+#      - .onion -> TOR
+#      - blog platforms (blogspot, medium, wordpress, ghost) -> surf
+#      - otherwise -> librewolf
+# ==============================================================
 
-# Author: Kris Yotam
-# Date: 2025-09-28
-# Purpose: Custom browser dispatcher. Routes URLs to the correct browser:
-#          - Blog platforms (Blogspot, Medium, WordPress, Ghost) → surf
-#          - .onion domains → torbrowser-launcher
-#          - Everything else → LibreWolf
+set -euo pipefail
 
+# -------------------- Configuration (like config.py header) -----------------
+# Commands (override with env vars if needed)
+LIBREWOLF_CMD="${LIBREWOLF_CMD:-librewolf}"
+BRAVE_CMD="${BRAVE_CMD:-brave-browser}"
+TOR_CMD="${TOR_CMD:-torbrowser-launcher}"
+SURF_CMD="${SURF_CMD:-surf}"
 
-for url in "$@"; do
-    host=$(printf '%s\n' "$url" | sed -E 's#^[^/]*//([^/]+).*#\1#')
+# Supported friendly names (lowercase)
+BROWSERS=(librewolf brave tor surf)
 
-    case "$host" in
-        *blogspot.*|*medium.*|*wordpress.*|*ghost.*)
-            surf "$url" & ;;
-        *.onion)
-            torbrowser-launcher "$url" & ;;
-        *)
-            librewolf "$url" & ;;
+# ---------------------------------------------------------------------------
+
+print_help() {
+    cat <<'HELP'
+browser - Simple browser dispatcher / launcher
+
+Usage:
+  browser                 # interactive chooser
+  browser <name>          # launch specific browser (librewolf, brave, tor, surf)
+  browser <url>           # dispatch URL to the preferred browser
+  browser <name> <url>    # open URL with chosen browser
+
+Examples:
+  browser https://example.com
+  browser surf https://blog.example.com
+  browser brave
+
+HELP
+}
+
+choose_one() {
+    # choose_one <prompt> <opt1> <opt2> ...
+    local prompt="$1"; shift
+    local opts=("$@")
+    local i=1
+    printf "%s\n" "$prompt"
+    for o in "${opts[@]}"; do
+        printf "  %d) %s\n" "$i" "$o"
+        i=$((i+1))
+    done
+    printf "Choice [1-%d]: " $((i-1))
+    local choice
+    IFS= read -r choice || choice=''
+    if ! printf '%s' "$choice" | grep -qE '^[0-9]+$'; then
+        return 1
+    fi
+    if [ "$choice" -lt 1 ] || [ "$choice" -ge "$i" ]; then
+        return 1
+    fi
+    echo "${opts[$((choice-1))]}"
+}
+
+is_url() {
+    # crude URL test: contains :// or starts with www. or contains a dot and no spaces
+    local s="$1"
+    case "$s" in
+        *://*|www.*|*.*) return 0 ;;
+        *) return 1 ;;
     esac
-done
+}
 
-wait
+extract_host() {
+    # accept full URL or bare host
+    local u="$1"
+    # strip protocol
+    u="${u#*://}"
+    # strip path
+    u="${u%%/*}"
+    # strip port
+    u="${u%%:*}"
+    printf '%s' "$u"
+}
+
+dispatch_url() {
+    local url="$1"
+    local host
+    host=$(extract_host "$url")
+
+    # lower-case host for pattern matching
+    local host_lc
+    host_lc=$(printf '%s' "$host" | tr '[:upper:]' '[:lower:]')
+
+    case "$host_lc" in
+        *.onion)
+            launch_browser "tor" "$url" ;;
+        *blogspot.*|*medium.*|*wordpress.*|*ghost.*)
+            launch_browser "surf" "$url" ;;
+        *)
+            launch_browser "librewolf" "$url" ;;
+    esac
+}
+
+launch_browser() {
+    # launch_browser <name> [url]
+    local name="$1"
+    local url="${2:-}"
+    local cmd=""
+
+    case "${name,,}" in
+        librewolf)
+            cmd="$LIBREWOLF_CMD" ;;
+        brave)
+            cmd="$BRAVE_CMD" ;;
+        tor)
+            cmd="$TOR_CMD" ;;
+        surf)
+            cmd="$SURF_CMD" ;;
+        *)
+            printf "Unknown browser: %s\n" "$name" >&2
+            return 2 ;;
+    esac
+
+    if [ -n "$url" ]; then
+        # prefer to open in background so script exits
+        setsid "$cmd" "$url" >/dev/null 2>&1 &
+    else
+        setsid "$cmd" >/dev/null 2>&1 &
+    fi
+}
+
+main() {
+    if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+        print_help
+        return 0
+    fi
+
+    if [ "$#" -eq 0 ]; then
+        # interactive chooser
+        local choice
+        choice=$(choose_one "Choose browser:" "${BROWSERS[@]}") || {
+            printf "No valid choice. Exiting.\n"; return 1
+        }
+        launch_browser "$choice"
+        return 0
+    fi
+
+    # If first arg matches a browser name -> explicit launch
+    local first="${1,,}"
+    if printf '%s\n' "${BROWSERS[@]}" | grep -Fxq -- "$first"; then
+        if [ "$#" -ge 2 ]; then
+            # browser name + url
+            launch_browser "$first" "$2"
+        else
+            launch_browser "$first"
+        fi
+        return 0
+    fi
+
+    # If first arg looks like a url -> dispatch
+    if is_url "$1"; then
+        dispatch_url "$1"
+        return 0
+    fi
+
+    # otherwise assume it's a hostname-like argument; dispatch
+    dispatch_url "$1"
+}
+
+# If executed directly, run main with positional args
+if [ "${BASH_SOURCE[0]:-}" = "$0" ]; then
+    main "$@"
+fi
