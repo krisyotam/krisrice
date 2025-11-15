@@ -1,28 +1,28 @@
 #!/bin/sh
 
 # This file runs when a DM logs you into a graphical session.
-# If you use startx/xinit, this file will also be sourced.
+# If you use startx/xinit like a Chad, this file will also be sourced.
 
-# --- DPI setup ---
-xrandr --dpi 160        # Set DPI. Default bumped from 96 to 160 for HiDPI screens.
+# --- DPI: bump to 160 by default ---
+xrandr --dpi 160    # HiDPI default
 
-# --- Set wallpaper ---
-setbg &
-
-# --- OPTIONAL: load Xresources (uncomment if using xrdb patch) ---
-# xrdb ${XDG_CONFIG_HOME:-$HOME/.config}/x11/xresources & xrdbpid=$!
-
-# --- Autostart programs ---
+# --- Autostart background programs ---
 autostart="mpd xcompmgr dunst unclutter pipewire remapd"
 
 for program in $autostart; do
-    pidof -sx "$program" || "$program" &
+    pidof -sx "$program" >/dev/null 2>&1 || "$program" &
 done >/dev/null 2>&1
 
-# --- Wait for xrdb if used ---
-[ -n "$xrdbpid" ] && wait "$xrdbpid"
+# --- Run setbg AFTER dwm is up, then restart dwm ---
 
-# --- Force dwm to reload after setting wallpaper ---
-# This simulates the Mod+Shift+R (restart) or sends a SIGUSR1 depending on your patch.
-# Most LARBS builds include the "dwm-attachbelow" restart binding which is actually SIGHUP.
-pkill -HUP dwm
+# 1) Wait a bit for the DM/xinit to actually start dwm, then set the wallpaper
+(
+    sleep 1
+    setbg &
+) &
+
+# 2) Then wait slightly longer and force dwm to reload so it re-reads DPI/etc.
+(
+    sleep 2
+    pkill -HUP dwm 2>/dev/null
+) &
