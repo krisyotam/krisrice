@@ -1,63 +1,172 @@
 #!/bin/sh
 # ==============================================================
-#  Laptop HiDPI Setup Script
+# Laptop HiDPI Setup Script
 # --------------------------------------------------------------
-#  Author   : Kris Yotam (aka. khr1st)
-#  Contact  : krisyotam@protonmail.com
-#  License  : GNU GPLv3
-#  Date     : 2025-09-29
+# Author     : Kris Yotam (aka. khr1st)
+# Contact    : krisyotam@protonmail.com
+# License    : GNU GPLv3
+# Date       : 2025-10-29
 # --------------------------------------------------------------
-#  Description:
-#    - Set xrandr DPI to 130 (immediate effect).
-#    - Update ~/.xprofile to persist DPI.
-#    - Update ~/.Xresources to enlarge terminal fonts and DPI.
-#    - Backups are made before modifying files.
-#    - Created for Macbook Pro 2015 13" Retina (Model A1502)
+# Description:
+# - Prompt for custom DPI; default to 160 if not provided.
+# - Set xrandr DPI immediately and persist in ~/.xprofile.
+# - Update ~/.Xresources: Xft.dpi, st.font, dwm.font*, dmenu.font, Xcursor.size.
+#   (*dwm.font only affects dwm if the xrdb/Xresources patch is applied.)
+# - Create timestamped backups before modifying files.
+# - Target: MacBook Pro 2015 13" Retina (A1502), but generic HiDPI friendly.
 # ==============================================================
 
-DPI_VALUE=130
-FONT="Monospace:size=14"
+set -eu
 
-# --- Apply change immediately ---
-xrandr --dpi "$DPI_VALUE"
+DEFAULT_DPI=160
+BASE_DPI=96      # reference DPI
+BASE_FONT=10     # reference font size used for scaling
 
-# --- Backup and patch ~/.xprofile ---
 XPROFILE="$HOME/.xprofile"
+XRES="$HOME/.Xresources"
+
+# --------------------------------------------------------------
+# Ask for custom DPI
+# --------------------------------------------------------------
+printf "Use a custom DPI value? [Y/n]: "
+read -r use_custom
+use_custom=${use_custom:-n}
+
+if [ "$use_custom" = "Y" ] || [ "$use_custom" = "y" ]; then
+    while :; do
+        printf "Enter DPI (integer, e.g. 160): "
+        read -r DPI_VALUE
+
+        case "$DPI_VALUE" in
+            ''|*[!0-9]*) echo "[warn] Not an integer. Try again." ;;
+            *)
+                if [ "$DPI_VALUE" -lt 72 ] || [ "$DPI_VALUE" -gt 400 ]; then
+                    echo "[warn] DPI $DPI_VALUE seems extreme. Accepting anyway."
+                fi
+                break
+                ;;
+        esac
+    done
+else
+    DPI_VALUE="$DEFAULT_DPI"
+fi
+
+# --------------------------------------------------------------
+# Compute scalable font values
+# --------------------------------------------------------------
+calc_font() {
+    awk -v dpi="$1" -v bd="$BASE_DPI" -v bf="$BASE_FONT" '
+        BEGIN {
+            val = bf * (dpi / bd)
+            ival = int(val + 0.5)
+            if (ival < 8) ival = 8
+            print ival
+        }
+    '
+}
+
+FONT_SIZE="$(calc_font "$DPI_VALUE")"
+
+ST_FONT="Monospace:size=${FONT_SIZE}"
+DMENU_FONT="Monospace-${FONT_SIZE}"
+DWM_FONT="Monospace:size=${FONT_SIZE}"
+
+# Cursor scales about DPI/5; clamp to [16,64]
+XCUR_SIZE="$(awk -v d="$DPI_VALUE" 'BEGIN {
+    s = int(d/5)
+    if (s < 16) s = 16
+    if (s > 64) s = 64
+    print s
+}')"
+
+# --------------------------------------------------------------
+# Sanity check for required binaries
+# --------------------------------------------------------------
+command -v xrandr >/dev/null 2>&1 || {
+    echo "[err] xrandr not found. Install xorg-xrandr."
+    exit 1
+}
+
+command -v xrdb >/dev/null 2>&1 || {
+    echo "[err] xrdb not found. Install xorg-xrdb."
+    exit 1
+}
+
+# --------------------------------------------------------------
+# Apply DPI immediately
+# --------------------------------------------------------------
+xrandr --dpi "$DPI_VALUE" || echo "[warn] xrandr --dpi failed to apply immediately."
+
+# --------------------------------------------------------------
+# Backup helper
+# --------------------------------------------------------------
+ts="$(date +%s)"
+
+backup_if_exists() {
+    [ -f "$1" ] && cp -f "$1" "$1.bak.$ts"
+}
+
+# --------------------------------------------------------------
+# Patch ~/.xprofile for persistent DPI
+# --------------------------------------------------------------
+backup_if_exists "$XPROFILE"
+
 if [ -f "$XPROFILE" ]; then
-    cp "$XPROFILE" "$XPROFILE.bak.$(date +%s)"
-    if grep -q "xrandr --dpi" "$XPROFILE"; then
-        # Replace existing dpi line
-        sed -i "s/^xrandr --dpi .*/xrandr --dpi $DPI_VALUE         # Set DPI. User may want to use a larger number for larger screens./" "$XPROFILE"
+    if grep -qE '^\s*xrandr --dpi ' "$XPROFILE"; then
+        sed -i "s|^\s*xrandr --dpi .*|xrandr --dpi $DPI_VALUE # Set DPI (LARBS hint: tweak if bar looks tiny)|" "$XPROFILE"
     else
-        # Append if no dpi line
-        echo "xrandr --dpi $DPI_VALUE         # Set DPI" >> "$XPROFILE"
+        printf "\n# HiDPI persistence\nxrandr --dpi %s # Set DPI (LARBS hint: tweak if bar looks tiny)\n" \
+            "$DPI_VALUE" >> "$XPROFILE"
     fi
 else
-    echo "#!/bin/sh" > "$XPROFILE"
-    echo "xrandr --dpi $DPI_VALUE         # Set DPI" >> "$XPROFILE"
+    {
+        echo "#!/bin/sh"
+        echo "xrandr --dpi $DPI_VALUE # Set DPI (LARBS hint: tweak if bar looks tiny)"
+    } > "$XPROFILE"
 fi
 
-# --- Backup and patch ~/.Xresources ---
-XRES="$HOME/.Xresources"
-[ -f "$XRES" ] && cp "$XRES" "$XRES.bak.$(date +%s)"
+# --------------------------------------------------------------
+# Patch ~/.Xresources
+# --------------------------------------------------------------
+backup_if_exists "$XRES"
+touch "$XRES"
 
-# Ensure DPI line
-if grep -q "^Xft.dpi:" "$XRES" 2>/dev/null; then
-    sed -i "s/^Xft.dpi:.*/Xft.dpi: $DPI_VALUE/" "$XRES"
-else
-    echo "Xft.dpi: $DPI_VALUE" >> "$XRES"
-fi
+ensure_or_update_kv() {
+    key_regex="$1"
+    new_line="$2"
+    file="$3"
 
-# Ensure terminal font line
-if grep -q "^st.font:" "$XRES" 2>/dev/null; then
-    sed -i "s/^st.font:.*/st.font: $FONT/" "$XRES"
-else
-    echo "st.font: $FONT" >> "$XRES"
-fi
+    if grep -qE "^$key_regex" "$file" 2>/dev/null; then
+        sed -i "s|^$key_regex.*|$new_line|" "$file"
+    else
+        printf "%s\n" "$new_line" >> "$file"
+    fi
+}
 
-# --- Apply Xresources immediately ---
-xrdb -merge "$XRES"
+ensure_or_update_kv "Xft\.dpi:"      "Xft.dpi: $DPI_VALUE"       "$XRES"
+ensure_or_update_kv "st\.font:"     "st.font: $ST_FONT"         "$XRES"
+ensure_or_update_kv "dwm\.font:"    "dwm.font: $DWM_FONT"       "$XRES"
+ensure_or_update_kv "dmenu\.font:"  "dmenu.font: $DMENU_FONT"   "$XRES"
+ensure_or_update_kv "Xcursor\.size:" "Xcursor.size: $XCUR_SIZE" "$XRES"
 
-echo "[ok] DPI set to $DPI_VALUE and made persistent."
-echo "[ok] Terminal font set to $FONT."
+# Apply Xresources instantly
+xrdb -merge "$XRES" || echo "[warn] xrdb merge failed."
+
+# --------------------------------------------------------------
+# Summary
+# --------------------------------------------------------------
+echo "[ok] DPI set to $DPI_VALUE and persisted in $XPROFILE."
+echo "[ok] ~/.Xresources updated:"
+echo "     - Xft.dpi: $DPI_VALUE"
+echo "     - st.font: $ST_FONT"
+echo "     - dwm.font: $DWM_FONT (requires dwm xrdb patch)"
+echo "     - dmenu.font: $DMENU_FONT"
+echo "     - Xcursor.size: $XCUR_SIZE"
+
+echo "[ok] Backups created:"
+echo "     $XPROFILE.bak.$ts and $XRES.bak.$ts (if originals existed)."
+echo
+echo "Note: For dwm without the xrdb patch, edit config.h (fonts[]) and rebuild."
+
+
 echo "[ok] Backups created with timestamp suffix."
